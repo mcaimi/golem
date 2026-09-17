@@ -16,7 +16,7 @@ void force_arp(in_addr_t dst) {
 
   //  opening a socket
   if ((fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-    die("%s\n", "\033[1;33m[Packet Forge]\033[0m: packet_forge.c::force_arp(): "
+    die("%s\n", YELLOW "[Packet Forge]" RESET ": packet_forge.c::force_arp(): "
                 "cannot open a new socket!!\n");
 
   //  building a fake packet for host "dst"
@@ -37,7 +37,7 @@ void force_arp(in_addr_t dst) {
 nic_info_t *get_hw_addr(char *iface) {
   nic_info_t *mac = (nic_info_t *)malloc(sizeof(nic_info_t));
   if (mac == NULL) {
-    printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+    printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                    "packet_forge.c::get_hw_addr(): OUT OF MEMORY!\n");
     return NULL;
   }
@@ -45,7 +45,7 @@ nic_info_t *get_hw_addr(char *iface) {
 
   if (platform_get_local_mac(iface, mac->mac_address) < 0) {
     printf("%s\n",
-           "\033[1;33m[Packet Forge]\033[0m: packet_forge.c::get_hw_addr(): "
+           YELLOW "[Packet Forge]" RESET ": packet_forge.c::get_hw_addr(): "
            "Cannot get HW ADDR, Try Again (wrong interface? typo?)\n");
     free(mac);
     return NULL;
@@ -58,7 +58,7 @@ nic_info_t *get_hw_addr(char *iface) {
   in_addr_t ip = platform_get_local_ip(iface);
   if (ip == INADDR_NONE) {
     printf("%s\n",
-           "\033[1;33m[Packet Forge]\033[0m: packet_forge.c::get_hw_addr(): "
+           YELLOW "[Packet Forge]" RESET ": packet_forge.c::get_hw_addr(): "
            "Cannot get IP ADDR, Try Again (wrong interface? typo?)\n");
     free(mac);
     return NULL;
@@ -76,24 +76,24 @@ nic_info_t *get_peer_hw_addr(char *ife, char *IP_addr) {
   struct in_addr addr;
 
   if (!inet_aton(IP_addr, &addr)) {
-    printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+    printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                    "packet_forge.c::get_peer_hw_addr(): Invalid IP\n");
     return NULL;
   }
 
   unsigned char mac_bytes[6];
   if (platform_get_arp_entry(ife, addr.s_addr, mac_bytes) < 0) {
-    printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+    printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                    "packet_forge.c::get_peer_hw_addr(): ARP lookup failed");
     printf("%s\n",
-           "\033[1;33m[Packet Forge]\033[0m: "
+           YELLOW "[Packet Forge]" RESET ": "
            "packet_forge.c::get_peer_hw_addr(): Trying a workaround...");
     force_arp(inet_addr(IP_addr));
     if (platform_get_arp_entry(ife, addr.s_addr, mac_bytes) < 0) {
       printf("%s\n",
-             "\033[1;33m[Packet Forge]\033[0m: "
+             YELLOW "[Packet Forge]" RESET ": "
              "packet_forge.c::get_peer_hw_addr(): ARP lookup failed!!\n");
-      printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+      printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                      "packet_forge.c::get_peer_hw_addr(): This is not fatal. "
                      "Try relaunching the prg.\n");
       return NULL;
@@ -102,7 +102,7 @@ nic_info_t *get_peer_hw_addr(char *ife, char *IP_addr) {
 
   nic_info_t *hwaddr = (nic_info_t *)malloc(sizeof(nic_info_t));
   if (hwaddr == NULL) {
-    printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+    printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                    "packet_forge.c::get_peer_hw_addr(): OUT OF MEMORY!\n");
     return NULL;
   }
@@ -139,7 +139,7 @@ nic_info_t *new_nic_info_t(char *IPAddr, char *MACAddr) {
 
   //  sanity check on the specified IP address
   if (!inet_aton(IPAddr, &addr)) {
-    printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+    printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                    "packet_forge.c::new_nic_info_t(): Invalid IP\n");
     return NULL;
   }
@@ -147,7 +147,7 @@ nic_info_t *new_nic_info_t(char *IPAddr, char *MACAddr) {
   // allocate space for a new nic descriptor
   temp = (nic_info_t *)malloc(sizeof(nic_info_t));
   if (temp == NULL) {
-    printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+    printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                    "packet_forge.c::new_nic_info_t(): OUT OF MEMORY!\n");
     return NULL;
   }
@@ -193,24 +193,24 @@ void arp_forgery(int h_type, unsigned char e_len, unsigned char p_len,
   memcpy(arppacket.ar_spa, spa, p_len); // arppacket.ar_spa = spa;
   memcpy(arppacket.ar_tpa, tpa, p_len); // arppacket.ar_tpa = tpa;
 
-  printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+  printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                  "packet_forge.c::arp_forgery(): ARP MATCHING Configuration");
 
-  printf("\033[1;33m[Packet Forge]\033[0m: ");
-  printf("SENDER IP: \033[1;32m%u.%u.%u.%u\033[0m\n", arppacket.ar_spa[0],
+  printf(YELLOW "[Packet Forge]" RESET ": ");
+  printf("SENDER IP: " GREEN "%u.%u.%u.%u" RESET "\n", arppacket.ar_spa[0],
          arppacket.ar_spa[1], arppacket.ar_spa[2], arppacket.ar_spa[3]);
 
-  printf("\033[1;33m[Packet Forge]\033[0m: ");
+  printf(YELLOW "[Packet Forge]" RESET ": ");
   printf("SENDER MAC: "
-         "\033[1;32m%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx\033[0m\n",
+         GREEN "%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx" RESET "\n",
          arppacket.ar_sha[0], arppacket.ar_sha[1], arppacket.ar_sha[2],
          arppacket.ar_sha[3], arppacket.ar_sha[4], arppacket.ar_sha[5]);
-  printf("\033[1;33m[Packet Forge]\033[0m: ");
-  printf("TARGET IP: \033[1;32m%u.%u.%u.%u\033[0m\n", arppacket.ar_tpa[0],
+  printf(YELLOW "[Packet Forge]" RESET ": ");
+  printf("TARGET IP: " GREEN "%u.%u.%u.%u" RESET "\n", arppacket.ar_tpa[0],
          arppacket.ar_tpa[1], arppacket.ar_tpa[2], arppacket.ar_tpa[3]);
-  printf("\033[1;33m[Packet Forge]\033[0m: ");
+  printf(YELLOW "[Packet Forge]" RESET ": ");
   printf("TARGET MAC: "
-         "\033[1;32m%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx\033[0m\n",
+         GREEN "%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx" RESET "\n",
          arppacket.ar_tha[0], arppacket.ar_tha[1], arppacket.ar_tha[2],
          arppacket.ar_tha[3], arppacket.ar_tha[4], arppacket.ar_tha[5]);
 
@@ -229,17 +229,17 @@ void ether_forgery(int PTYPE, unsigned char *source_address,
   memcpy(ethframe.h_source, source_address, 6); // SOURCE MAC
   memcpy(ethframe.h_dest, target_address, 6);   // DEST MAC
 
-  printf("%s\n", "\033[1;33m[Packet Forge]\033[0m: "
+  printf("%s\n", YELLOW "[Packet Forge]" RESET ": "
                  "packet_forge.c::ether_forgery(): MAC Configuration");
-  printf("\033[1;33m[Packet Forge]\033[0m: ");
+  printf(YELLOW "[Packet Forge]" RESET ": ");
   printf("SENDER MAC: "
-         "\033[1;32m%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx\033[0m\n",
+         GREEN "%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx" RESET "\n",
          ethframe.h_source[0], ethframe.h_source[1], ethframe.h_source[2],
          ethframe.h_source[3], ethframe.h_source[4], ethframe.h_source[5]);
 
-  printf("\033[1;33m[Packet Forge]\033[0m: ");
+  printf(YELLOW "[Packet Forge]" RESET ": ");
   printf("TARGET MAC: "
-         "\033[1;32m%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx\033[0m\n",
+         GREEN "%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx" RESET "\n",
          ethframe.h_dest[0], ethframe.h_dest[1], ethframe.h_dest[2],
          ethframe.h_dest[3], ethframe.h_dest[4], ethframe.h_dest[5]);
   memcpy(packet, &ethframe, sizeof(struct ETHER_packet_header));
