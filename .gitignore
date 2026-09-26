@@ -1,3 +1,12 @@
 **/backend/bin/*
 **/backend/build/*
 **/demo/*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+.DS_Store
