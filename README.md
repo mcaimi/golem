@@ -71,9 +71,10 @@ A FastAPI service that manages `arpoison.bin` as supervised subprocesses, exposi
 
 - **Backend**: `clang` (or any C11 compiler), Linux or macOS
 - **API**: Python 3.11+, [uv](https://docs.astral.sh/uv/) package manager
+- **Containerized (optional)**: [Podman](https://podman.io/) (or Docker) with compose support
 - **Runtime**: root privileges (raw sockets and kernel IP-forwarding control)
 
-## Quick Start
+## Quick Start (native)
 
 ```bash
 # Build the C binary
@@ -90,6 +91,23 @@ sudo uv run python -m uvicorn api.main:app --host 0.0.0.0 --port 8080
 ```
 
 API docs are available at `/docs` (Swagger UI) and `/redoc`.
+
+## Quick Start (containerized)
+
+The repo ships a two-stage `Containerfile` (stage 1 statically builds the C backend with `clang`/`make`, stage 2 installs the Python dependencies and bakes the binary into a `python:3.11-slim` runtime image) plus a `podman-compose.yml` deployment file.
+
+```bash
+# Build the image and start the service
+podman compose up -d --build
+
+# Follow logs / stop the service
+podman compose logs -f
+podman compose down
+```
+
+> **Security note**: the service MUST run with host networking and `privileged: true` so the backend can open raw `AF_PACKET` sockets and toggle `/proc/sys/net/ipv4/ip_forward`. With `network_mode: host`, the API binds `ARPOISON_PORT` (default `8080`) directly on the host — no port mapping is performed.
+
+Configuration via environment variables: copy `.env.example` to `.env` and edit to taste; every `ARPOISON_*` variable is also overridable inline in the `environment:` block of `podman-compose.yml` (inline values win over `.env`).
 
 ### Example: Start a MITM session
 
@@ -123,7 +141,7 @@ The API server is configured via environment variables with the `ARPOISON_` pref
 
 | Variable | Default | Description |
 |---|---|---|
-| `ARPOISON_BINARY_PATH` | `backend/bin/arpoison.bin` | Path to the compiled binary |
+| `ARPOISON_BINARY_PATH` | `backend/bin/arpoison.bin` (native) / `/app/backend/bin/arpoison.bin` (container) | Path to the compiled binary |
 | `ARPOISON_DEFAULT_TIMING_MS` | `2000` | Default flood timing (ms) |
 | `ARPOISON_PROCESS_STOP_TIMEOUT` | `5.0` | Seconds before SIGKILL fallback |
 | `ARPOISON_STARTUP_PARSE_TIMEOUT` | `15.0` | Seconds to wait for binary init output |
@@ -134,6 +152,10 @@ The API server is configured via environment variables with the `ARPOISON_` pref
 
 ```
 golem/
+├── Containerfile               # Two-stage build (C backend + Python runtime)
+├── podman-compose.yml          # Podman Compose deployment (host network, privileged)
+├── .containerignore            # Container build-context exclusions
+├── .env.example                # Config template (ARPOISON_* variables)
 ├── api/                        # FastAPI REST service
 │   ├── main.py                 # App entry point and lifespan
 │   ├── routes.py               # Endpoint definitions
