@@ -1,0 +1,31 @@
+# VCS
+.git
+.gitignore
+
+# Build outputs (rebuilt inside the image)
+backend/build/
+backend/bin/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+dist/
+.python-version
+
+# Note: pyproject.toml and uv.lock are intentionally NOT ignored — the
+# runtime stage needs both for `uv sync --frozen`.
+
+# Environment
+.env
+
+# Editor / OS
+.DS_Store
+*.swp
+
+# This compose file (not needed in the image)
+podman-compose.yml
+podman-compose.override.yml
+.env.example

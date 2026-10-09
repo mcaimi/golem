@@ -1,0 +1,70 @@
+# Golem — Podman Compose deployment
+#
+#   podman compose up -d --build
+#   podman compose logs -f
+#   podman compose down
+#
+# Security note: this service performs ARP spoofing. It MUST run with host
+# networking and privileged mode so the C backend can open raw AF_PACKET
+# sockets and write /proc/sys/net/ipv4/ip_forward. Run it ONLY on networks
+# you own or have explicit written permission to test.
+#
+# Configuration: copy .env.example to .env and edit to taste. Every
+# ARPOISON_* variable can also be set inline in the `environment:` block
+# below (inline values win over .env).
+
+services:
+  golem:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: golem:latest
+    container_name: golem
+    restart: unless-stopped
+
+    # Raw ARP injection needs to see the real host NIC. Bridge networking
+    # adds a veth/NAT layer that breaks L2 ARP spoofing, so use host mode.
+    network_mode: host
+
+    # Required for raw sockets (CAP_NET_RAW) and writing
+    # /proc/sys/net/ipv4/ip_forward (needs CAP_NET_ADMIN + bypass of the
+    # default seccomp/AppArmor profile, hence privileged).
+    privileged: true
+
+    # With network_mode: host, ports are not mapped — the container binds
+    # ARPOISON_PORT directly on the host. Uncomment to also expose it via
+    # a port mapping if you switch to a bridge network later.
+    # ports:
+    #   - "${ARPOISON_PORT:-8080}:${ARPOISON_PORT:-8080}"
+
+    # Optional: override the host port the API binds to.
+    environment:
+      ARPOISON_HOST: "${ARPOISON_HOST:-0.0.0.0}"
+      ARPOISON_PORT: "${ARPOISON_PORT:-8080}"
+      ARPOISON_BINARY_PATH: "${ARPOISON_BINARY_PATH:-/app/backend/bin/arpoison.bin}"
+      ARPOISON_DEFAULT_TIMING_MS: "${ARPOISON_DEFAULT_TIMING_MS:-2000}"
+      ARPOISON_PROCESS_STOP_TIMEOUT: "${ARPOISON_PROCESS_STOP_TIMEOUT:-5.0}"
+      ARPOISON_STARTUP_PARSE_TIMEOUT: "${ARPOISON_STARTUP_PARSE_TIMEOUT:-15.0}"
+
+    # Pick up ARPOISON_* from a local .env file if present (e.g. from
+    # `cp .env.example .env`). The inline `environment:` block above still
+    # wins for any variable set there, so this is purely additive.
+    env_file:
+      - path: .env
+        required: false
+
+    # Optional live-rebuild debug mount (uncomment to edit backend C sources
+    # on the host and rebuild in-place — requires a rebuild step in the image):
+    # volumes:
+    #   - ./backend/src:/app/backend/src:ro
+
+    # ARPOISON_PORT is set inside the container (see `environment:`), so the
+    # healthcheck reads it at runtime rather than baking in a parse-time value.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS "http://127.0.0.1:${ARPOISON_PORT}/api/v1/health" || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
