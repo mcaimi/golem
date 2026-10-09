@@ -1,8 +1,10 @@
 # syntax=docker/dockerfile:1
 #
-# Golem — two-stage build.
+# Golem — three-stage build.
 #   Stage 1: build the C ARP-spoofing backend (arpoison.bin), statically linked.
-#   Stage 2: runtime image for the FastAPI service, with the binary baked in.
+#   Stage 2: resolve the Python virtualenv via uv (pyproject.toml/uv.lock).
+#   Stage 3: runtime image for the FastAPI service, with the binary and venv
+#            baked in.
 #
 # The API (api/) spawns the C binary as a subprocess and needs root + raw
 # sockets at runtime; the runtime container is therefore run privileged with
@@ -31,9 +33,26 @@ RUN mkdir -p backend/build backend/bin \
     && test -x backend/bin/arpoison.bin
 
 # ============================================================================
-# Stage 2 — runtime image (FastAPI service)
+# Stage 2 — resolve the Python virtualenv via uv
 # ============================================================================
-FROM python:3.11-slim AS runtime
+FROM ghcr.io/astral-sh/uv:0.12.24-python3.11-trixie-slim AS python-deps
+
+WORKDIR /app
+
+# uv sync is driven by the project's pyproject.toml/uv.lock
+ENV UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
+
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+# ============================================================================
+# Stage 3 — runtime image (FastAPI service)
+# ============================================================================
+FROM ghcr.io/astral-sh/uv:0.12.24-python3.11-trixie-slim AS runtime
 
 # curl is only needed for the container healthcheck.
 RUN apt-get update \
@@ -42,23 +61,14 @@ RUN apt-get update \
 
 WORKDIR /app
 
-# Install the Python runtime dependencies first (better layer caching).
-# Extract the runtime deps from pyproject.toml into requirements.txt, then
-# install from that — keeps the build declarative without a build tool.
-COPY pyproject.toml ./
-RUN python - <<'PY'
-import tomllib
-with open("pyproject.toml", "rb") as f:
-    data = tomllib.load(f)
-with open("requirements.txt", "w") as out:
-    for dep in data["project"]["dependencies"]:
-        out.write(dep + "\n")
-PY
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the application code and the pre-built backend binary.
+# Bring in the pre-resolved venv (built by uv in the python-deps stage) and
+# the application code plus the pre-built backend binary.
+COPY --from=python-deps /app/.venv ./.venv
 COPY api/ ./api/
 COPY --from=builder /build/backend/bin/arpoison.bin ./backend/bin/arpoison.bin
+
+# Make the uv-managed venv the default Python for CMD below.
+ENV PATH="/app/.venv/bin:${PATH}"
 
 # Defaults used by the API (all overridable via ARPOISON_* env vars).
 ENV ARPOISON_BINARY_PATH=/app/backend/bin/arpoison.bin \

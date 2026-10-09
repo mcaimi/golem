@@ -13,6 +13,10 @@ __pycache__/
 *.egg-info/
 .venv/
 dist/
+.python-version
+
+# Note: pyproject.toml and uv.lock are intentionally NOT ignored — the
+# runtime stage needs both for `uv sync --frozen`.
 
 # Environment
 .env
